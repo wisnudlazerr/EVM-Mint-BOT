@@ -1,0 +1,25 @@
+{
+  "name": "evm-mint-bot",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Clean EVM whitelist/FCFS NFT mint bot template for burner wallets.",
+  "type": "commonjs",
+  "main": "whitelist-fcfs-mint-bot.js",
+  "scripts": {
+    "check": "node -c whitelist-fcfs-mint-bot.js",
+    "start": "node whitelist-fcfs-mint-bot.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4"
+  },
+  "keywords": [
+    "evm",
+    "nft",
+    "mint",
+    "whitelist",
+    "fcfs",
+    "seadrop"
+  ],
+  "license": "MIT"
+}
