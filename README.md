@@ -46,7 +46,7 @@ Whitelist / FCFS geber controls:
 MINT_MODE=allowlist
 SEADROP_CONTRACT=0xYourSeaDropContract
 START_AT=2026-01-01T00:00:00.000Z
-FIRE_GAS_TIERS=700,500,350,250,150
+FIRE_GAS_TIERS=300,220,160,120
 MINT_PARAMS_JSON=["0","1","0","4102444800","0","0","0",false]
 PROOF_JSON=[]
 ```
@@ -191,6 +191,22 @@ OPENSEA_POLL_INTERVAL_MS=1000
 WAIT_FOR_ONCHAIN_DROP=false
 ```
 
+## Gas tier presets
+
+Default is balanced, not suicidal:
+
+```env
+FIRE_GAS_TIERS=300,220,160,120
+```
+
+For brutal FCFS war, manually raise it:
+
+```env
+FIRE_GAS_TIERS=700,500,350,250,150
+```
+
+Same nonce means only one accepted transaction should be mined, but the highest tier can still make the mined tx expensive on Ethereum mainnet. Use burner wallet and dry-run first.
+
 ## OpenSea raw sniper mode
 
 This mode is inspired by OpenSea frontend mint flow. It polls GraphQL for a released transaction, then uses the same nonce gas ladder for broadcast.
@@ -199,7 +215,7 @@ This mode is inspired by OpenSea frontend mint flow. It polls GraphQL for a rele
 MINT_MODE=opensea_raw
 OPENSEA_COLLECTION_SLUG=your-collection-slug
 OPENSEA_JWT=eyJ...fresh-token
-FIRE_GAS_TIERS=700,500,350,250,150
+FIRE_GAS_TIERS=300,220,160,120
 DRY_RUN=true
 ```
 
