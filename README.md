@@ -53,6 +53,7 @@ PROOF_JSON=[]
 
 Modes:
 
+- `opensea_raw` = poll OpenSea GraphQL until raw mint transaction is released, then gas-ladder broadcast
 - `allowlist` = SeaDrop `mintAllowList` with `MINT_PARAMS_JSON` + `PROOF_JSON`
 - `signed` = SeaDrop `mintSigned` with `SALT` + `SIGNATURE`
 - `public` = SeaDrop `mintPublic`
@@ -101,7 +102,10 @@ DRY_RUN=false npm start
 | `NFT_CONTRACT` | Yes | NFT contract address. Must contain code on selected chain. |
 | `SEADROP_CONTRACT` | Optional | SeaDrop contract address for `mintPublic`. |
 | `OPENSEA_SLUG` | Optional | Collection slug placeholder. No cookie/session fetch in public repo. |
-| `MINT_MODE` | Yes | `allowlist`, `signed`, `public`, or `direct`. Default `allowlist`. |
+| `MINT_MODE` | Yes | `opensea_raw`, `allowlist`, `signed`, `public`, or `direct`. Default `allowlist`. |
+| `OPENSEA_COLLECTION_SLUG` | Raw mode | OpenSea slug used for stage/raw transaction lookup. |
+| `OPENSEA_JWT` | Raw mode | Fresh OpenSea browser JWT. Never commit it. |
+| `OPENSEA_API_KEY` | Optional | Optional OpenSea API key. Never commit it. |
 | `FIRE_GAS_TIERS` | Yes | Same-nonce gas ladder percentages. Example `700,500,350,250,150`. |
 | `MINT_PARAMS_JSON` | Allowlist/signed | SeaDrop mint params tuple. Keep real values out of git if sensitive. |
 | `PROOF_JSON` | Allowlist | Merkle proof array. Do not commit real proof files. |
@@ -168,6 +172,30 @@ Increase `GAS_LIMIT`, `BASE_FEE_MULTIPLIER`, or priority fee settings.
 ### `OpenSea proof unavailable`
 
 This public template does not fetch private/protected OpenSea proofs. Paste or implement proof flow only if you understand target contract ABI and never commit proof files.
+
+## OpenSea raw sniper mode
+
+This mode is inspired by OpenSea frontend mint flow. It polls GraphQL for a released transaction, then uses the same nonce gas ladder for broadcast.
+
+```env
+MINT_MODE=opensea_raw
+OPENSEA_COLLECTION_SLUG=your-collection-slug
+OPENSEA_JWT=eyJ...fresh-token
+FIRE_GAS_TIERS=700,500,350,250,150
+DRY_RUN=true
+```
+
+Run dry first:
+
+```bash
+npm run dry-run
+```
+
+Live only when ready:
+
+```bash
+DRY_RUN=false npm start
+```
 
 ## Safety design
 
