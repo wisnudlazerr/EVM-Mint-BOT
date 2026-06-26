@@ -37,20 +37,10 @@ async function preflight(config, provider, wallets, logger) {
   if (!nftHasCode)
     throw new Error("NFT_CONTRACT has no code on selected chain");
 
-  if (config.seadropContract) {
-    const seadropHasCode = await contractHasCode(
-      provider,
-      config.seadropContract,
-    );
-    if (!seadropHasCode)
-      throw new Error("SEADROP_CONTRACT has no code on selected chain");
-  }
-
   logger.info("preflight config ok", {
     chainIdentifier: config.chainIdentifier,
     chainId: config.expectedChainId,
     nftContract: config.nftContract,
-    seadropContract: config.seadropContract || null,
     quantity: config.quantity,
     dryRun: config.dryRun,
     preflightOnly: config.preflightOnly,

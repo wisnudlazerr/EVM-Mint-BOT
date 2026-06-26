@@ -79,6 +79,23 @@ function validateConfig(config) {
     errors.push("START_AT must be a valid ISO datetime");
   if (!CHAIN_IDS[config.chainIdentifier])
     errors.push(`Unsupported CHAIN_IDENTIFIER ${config.chainIdentifier}`);
+  if (config.mintMode !== "opensea_raw")
+    errors.push("MINT_MODE must be opensea_raw");
+  if (!config.openSeaCollectionSlug)
+    errors.push("Missing OPENSEA_COLLECTION_SLUG in .env");
+  if (!config.openSeaJwt) errors.push("Missing OPENSEA_JWT in .env");
+  if (!Number.isInteger(config.openSeaPolls) || config.openSeaPolls <= 0)
+    errors.push("OPENSEA_POLLS must be a positive integer");
+  if (
+    !Number.isInteger(config.openSeaPollIntervalMs) ||
+    config.openSeaPollIntervalMs <= 0
+  )
+    errors.push("OPENSEA_POLL_INTERVAL_MS must be a positive integer");
+  if (
+    !config.fireGasTiers.length ||
+    config.fireGasTiers.some((tier) => !Number.isFinite(tier) || tier <= 0)
+  )
+    errors.push("FIRE_GAS_TIERS must contain positive integers");
   if (signingRequired && !config.privateKeys.length)
     errors.push("Missing PRIVATE_KEY in .env");
   if (config.privateKeys.some((key) => !/^0x[0-9a-fA-F]{64}$/.test(key)))
@@ -112,7 +129,10 @@ function loadConfig(argv = process.argv.slice(2)) {
     privateKeys,
     rpcUrls: listValue(env.RPC_URLS || env.RPC_URL),
     nftContract: env.NFT_CONTRACT || "",
-    openseaSlug: env.OPENSEA_SLUG || "",
+    mintMode: String(env.MINT_MODE || "opensea_raw").toLowerCase(),
+    openSeaCollectionSlug:
+      env.OPENSEA_COLLECTION_SLUG || env.OPENSEA_SLUG || "",
+    openSeaJwt: env.OPENSEA_JWT || "",
     quantity: Number.parseInt(env.QUANTITY || "1", 10),
     mintPriceEth: numberValue(env.MINT_PRICE, 0),
     maxMintValueEth: numberValue(env.MAX_MINT_VALUE_ETH, 0.5),
@@ -123,6 +143,14 @@ function loadConfig(argv = process.argv.slice(2)) {
     ),
     minPriorityGwei: numberValue(env.MIN_PRIORITY_GWEI, 2),
     maxPriorityGwei: numberValue(env.MAX_PRIORITY_GWEI, 10),
+    openSeaPolls: Number.parseInt(env.OPENSEA_POLLS || "120", 10),
+    openSeaPollIntervalMs: Number.parseInt(
+      env.OPENSEA_POLL_INTERVAL_MS || "1000",
+      10,
+    ),
+    fireGasTiers: listValue(env.FIRE_GAS_TIERS || "300,220,160,120").map(
+      (value) => Number.parseInt(value, 10),
+    ),
     logFile: env.LOG_FILE || "logs/mint-results.jsonl",
   };
 
