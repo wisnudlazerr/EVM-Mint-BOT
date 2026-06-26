@@ -173,6 +173,24 @@ Increase `GAS_LIMIT`, `BASE_FEE_MULTIPLIER`, or priority fee settings.
 
 This public template does not fetch private/protected OpenSea proofs. Paste or implement proof flow only if you understand target contract ABI and never commit proof files.
 
+
+## Analyzer
+
+Inspect OpenSea stage, on-chain contract code, and fee recipient before running sniper mode:
+
+```bash
+npm run analyze
+```
+
+Useful env for analyzer/sniper:
+
+```env
+OPENSEA_COLLECTION_SLUG=your-collection-slug
+OPENSEA_POLLS=120
+OPENSEA_POLL_INTERVAL_MS=1000
+WAIT_FOR_ONCHAIN_DROP=false
+```
+
 ## OpenSea raw sniper mode
 
 This mode is inspired by OpenSea frontend mint flow. It polls GraphQL for a released transaction, then uses the same nonce gas ladder for broadcast.
@@ -206,3 +224,4 @@ DRY_RUN=false npm start
 - No suspicious dependencies.
 - Live broadcast requires explicit `DRY_RUN=false`.
 - Same-nonce gas ladder uses public RPC fanout; private relay path is stubbed until user wires their own relay.
+- `npm run analyze` gives a pre-war read on stage, contract code, and fee recipient.
