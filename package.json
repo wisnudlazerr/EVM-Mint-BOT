@@ -2,7 +2,7 @@
   "name": "evm-mint-bot",
   "version": "1.0.0",
   "private": false,
-  "description": "Clean EVM whitelist/FCFS NFT mint bot template for burner wallets.",
+  "description": "OpenSea raw transaction sniper for EVM NFT whitelist/FCFS mints.",
   "type": "commonjs",
   "main": "src/index.js",
   "scripts": {
@@ -22,12 +22,13 @@
     "prettier": "^3.3.3"
   },
   "keywords": [
+    "opensea",
     "evm",
     "nft",
     "mint",
-    "whitelist",
     "fcfs",
-    "seadrop"
+    "raw-transaction",
+    "sniper"
   ],
   "license": "MIT"
 }

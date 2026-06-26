@@ -69,8 +69,6 @@ function validateConfig(config) {
   if (!config.rpcUrls.length) errors.push("Missing RPC_URL in .env");
   if (!config.nftContract || !ethers.isAddress(config.nftContract))
     errors.push("Invalid NFT_CONTRACT address");
-  if (config.seadropContract && !ethers.isAddress(config.seadropContract))
-    errors.push("Invalid SEADROP_CONTRACT address");
   if (!Number.isInteger(config.quantity) || config.quantity <= 0)
     errors.push("QUANTITY must be a positive integer");
   if (!Number.isFinite(config.mintPriceEth) || config.mintPriceEth < 0)
@@ -116,7 +114,6 @@ function loadConfig(argv = process.argv.slice(2)) {
     privateKeys,
     rpcUrls: listValue(env.RPC_URLS || env.RPC_URL),
     nftContract: env.NFT_CONTRACT || "",
-    seadropContract: env.SEADROP_CONTRACT || "",
     openseaSlug: env.OPENSEA_SLUG || "",
     quantity: Number.parseInt(env.QUANTITY || "1", 10),
     mintPriceEth: numberValue(env.MINT_PRICE, 0),

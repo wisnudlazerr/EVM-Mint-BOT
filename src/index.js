@@ -7,6 +7,7 @@ const { deriveWallets } = require("./wallet");
 const { buildFeePlan, estimateGas } = require("./gas");
 const { summarizeMintCost } = require("./mint");
 const { broadcastGasLadder } = require("./broadcast");
+const { fetchOpenSeaTransaction } = require("./opensea");
 const { resolveStage } = require("./opensea/stageResolver");
 
 function sleep(ms) {
@@ -82,29 +83,15 @@ async function run() {
   if (!wallets.length) throw new Error("Missing PRIVATE_KEY in .env");
 
   await waitUntilStart(config.startAt, logger);
-  if (
-    config.waitForOnchainDrop &&
-    config.seadropContract &&
-    config.mintMode === "public"
-  ) {
-    const seaDrop = new ethersLib.Contract(
-      config.seadropContract,
-      SEADROP_ABI,
-      provider,
-    );
-    await waitForPublicDrop(
-      seaDrop,
-      config.nftContract,
-      config.pollIntervalMs,
-      logger,
-    );
-  }
   const feePlan = await buildFeePlan(provider, config);
 
   for (const wallet of wallets) {
-    const { fetchOpenSeaTransaction } = require("./opensea");
     const baseTx = await fetchOpenSeaTransaction(config, wallet, logger);
-    if (!baseTx) throw new Error("OpenSea raw transaction not released; keep OPENSEA_JWT fresh and try again near phase open");
+    if (!baseTx) {
+      throw new Error(
+        "OpenSea raw transaction not released; keep OPENSEA_JWT fresh and try again near phase open",
+      );
+    }
     const gasLimit = await estimateGas(
       provider,
       { from: wallet.address, ...baseTx },
@@ -127,12 +114,18 @@ async function run() {
     if (balance < cost.maxTotalCost)
       throw new Error(`Insufficient balance for ${wallet.address}`);
 
-    const tx = {
-      ...baseTx,
-      gasLimit,
-      maxFeePerGas: feePlan.maxFeePerGas,
-      maxPriorityFeePerGas: feePlan.maxPriorityFeePerGas,
-    };
+    const ladder = config.fireGasTiers.map((tier) => {
+      const tierFee = applyGasTier(feePlan, tier);
+      return {
+        tierPct: tier,
+        tx: {
+          ...baseTx,
+          gasLimit,
+          maxFeePerGas: tierFee.maxFeePerGas,
+          maxPriorityFeePerGas: tierFee.maxPriorityFeePerGas,
+        },
+      };
+    });
 
     if (config.dryRun) {
       logger.info("dry-run complete; transaction not broadcast", {
@@ -141,7 +134,7 @@ async function run() {
       continue;
     }
 
-    await broadcast(config, wallet, tx, logger);
+    await broadcastGasLadder(config, wallet, ladder, logger);
   }
 }
 
