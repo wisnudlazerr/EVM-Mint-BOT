@@ -12,6 +12,15 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function applyGasTier(feePlan, tierPct) {
+  const pct = BigInt(tierPct);
+  return {
+    ...feePlan,
+    maxFeePerGas: (feePlan.maxFeePerGas * pct) / 100n,
+    maxPriorityFeePerGas: (feePlan.maxPriorityFeePerGas * pct) / 100n,
+  };
+}
+
 async function waitUntilStart(startAt, logger) {
   if (!startAt) return;
   const target = Date.parse(startAt);
