@@ -11,7 +11,10 @@
     "preflight": "node src/index.js --preflight",
     "dry-run": "node src/index.js --dry-run",
     "format": "prettier --write \"src/**/*.js\"",
-    "analyze": "node scripts/analyzeOpenSea.js"
+    "analyze": "node scripts/analyzeOpenSea.js",
+    "jwt-check": "node scripts/jwtCheck.js",
+    "raw-test": "node scripts/rawTest.js",
+    "analyze-deep": "node scripts/analyzeOpenSeaDeep.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
