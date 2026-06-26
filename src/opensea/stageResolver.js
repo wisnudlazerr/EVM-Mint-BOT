@@ -1,6 +1,6 @@
 const STAGES_QUERY = `query DropBySlug($slug: String!) {
   dropBySlug(slug: $slug) {
-    stages { stageIndex stageType startTime endTime name }
+    stages { stageIndex stageType startTime endTime name price { unit } }
   }
 }`;
 
@@ -34,9 +34,11 @@ async function fetchOpenSeaStages(config, logger) {
 
 function classifyStage(stage) {
   const label = `${stage?.name || ""} ${stage?.stageType || ""}`.toLowerCase();
-  if (/fcfs|allow|white|presale|early/.test(label)) return "allowlist";
-  if (/public|open/.test(label)) return "public";
-  return "unknown";
+  if (/fcfs|first.come/.test(label)) return "FCFS_PROOF_REQUIRED_OR_RAW";
+  if (/allow|white|presale|early|premint/.test(label))
+    return "ALLOWLIST_PROOF_REQUIRED";
+  if (/public|open/.test(label)) return "PUBLIC_MINT";
+  return "UNKNOWN_STAGE";
 }
 
 function activeStage(stages, now = Date.now()) {
@@ -44,7 +46,7 @@ function activeStage(stages, now = Date.now()) {
     const start = stage.startTime ? Date.parse(stage.startTime) : 0;
     const end = stage.endTime ? Date.parse(stage.endTime) : Infinity;
     if (now >= start && now <= end)
-      return { ...stage, selectedMode: classifyStage(stage) };
+      return { ...stage, selectedMode: classifyStage(stage), status: "active" };
   }
   const next = stages
     .map((stage) => ({
@@ -53,19 +55,30 @@ function activeStage(stages, now = Date.now()) {
     }))
     .filter((stage) => Number.isFinite(stage.startMs) && stage.startMs > now)
     .sort((a, b) => a.startMs - b.startMs)[0];
-  return next ? { ...next, selectedMode: "wait" } : null;
+  return next
+    ? { ...next, selectedMode: classifyStage(next), status: "wait" }
+    : null;
 }
 
 async function resolveStage(config, logger) {
   const stages = await fetchOpenSeaStages(config, logger);
   const selected = activeStage(stages);
-  if (selected)
+  if (selected) {
     logger.info("OpenSea stage resolved", {
       name: selected.name,
       type: selected.stageType,
       selectedMode: selected.selectedMode,
+      status: selected.status,
+      startTime: selected.startTime,
+      endTime: selected.endTime,
     });
+  }
   return { stages, selected };
 }
 
-module.exports = { fetchOpenSeaStages, activeStage, resolveStage };
+module.exports = {
+  fetchOpenSeaStages,
+  activeStage,
+  classifyStage,
+  resolveStage,
+};
