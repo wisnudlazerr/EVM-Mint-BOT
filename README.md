@@ -1,8 +1,8 @@
 # EVM Mint BOT
 
-Clean Node.js template for EVM NFT whitelist / FCFS mint flows using a burner wallet.
+Public-safe geber template for EVM NFT whitelist / FCFS mint flows using a burner wallet.
 
-This repo is meant for readable transaction preparation, preflight checks, dry-run simulation, and explicit live broadcast. It does **not** bypass allowlists, CAPTCHA, signatures, or anti-bot rules.
+This repo is built for whitelist/FCFS timing: preflight checks, dry-run simulation, aggressive fee planning, same-nonce gas ladder broadcast, and explicit live send. It does **not** bypass allowlists, CAPTCHA, signatures, or anti-bot rules.
 
 ## Security warning
 
@@ -40,14 +40,25 @@ MINT_PRICE=0
 DRY_RUN=true
 ```
 
-Optional SeaDrop route:
+Whitelist / FCFS geber controls:
 
 ```env
+MINT_MODE=allowlist
 SEADROP_CONTRACT=0xYourSeaDropContract
-OPENSEA_SLUG=your-collection-slug
+START_AT=2026-01-01T00:00:00.000Z
+FIRE_GAS_TIERS=700,500,350,250,150
+MINT_PARAMS_JSON=["0","1","0","4102444800","0","0","0",false]
+PROOF_JSON=[]
 ```
 
-`OPENSEA_SLUG` is currently logged as a placeholder. OpenSea proof fetching is intentionally not wired to a secret API in this public template.
+Modes:
+
+- `allowlist` = SeaDrop `mintAllowList` with `MINT_PARAMS_JSON` + `PROOF_JSON`
+- `signed` = SeaDrop `mintSigned` with `SALT` + `SIGNATURE`
+- `public` = SeaDrop `mintPublic`
+- `direct` = fallback direct contract call using `MINT_FUNCTION` + `MINT_ARGS_JSON`
+
+`OPENSEA_SLUG` is currently logged as a placeholder. OpenSea cookie/session proof fetching is intentionally not wired to this public template.
 
 ## Commands
 
@@ -89,7 +100,13 @@ DRY_RUN=false npm start
 | `RPC_URL` | Yes | Public or private RPC endpoint. Parser supports `=` inside values. |
 | `NFT_CONTRACT` | Yes | NFT contract address. Must contain code on selected chain. |
 | `SEADROP_CONTRACT` | Optional | SeaDrop contract address for `mintPublic`. |
-| `OPENSEA_SLUG` | Optional | Collection slug placeholder for future proof fetching. |
+| `OPENSEA_SLUG` | Optional | Collection slug placeholder. No cookie/session fetch in public repo. |
+| `MINT_MODE` | Yes | `allowlist`, `signed`, `public`, or `direct`. Default `allowlist`. |
+| `FIRE_GAS_TIERS` | Yes | Same-nonce gas ladder percentages. Example `700,500,350,250,150`. |
+| `MINT_PARAMS_JSON` | Allowlist/signed | SeaDrop mint params tuple. Keep real values out of git if sensitive. |
+| `PROOF_JSON` | Allowlist | Merkle proof array. Do not commit real proof files. |
+| `SALT` / `SIGNATURE` | Signed | Required for `MINT_MODE=signed`. |
+| `MINT_FUNCTION` / `MINT_ARGS_JSON` | Direct | Fallback for non-SeaDrop contracts. |
 | `CHAIN_IDENTIFIER` | Yes | Example: `ethereum`, `base`, `polygon`, `arbitrum`. |
 | `QUANTITY` | Yes | Positive integer. |
 | `MINT_PRICE` | Yes | ETH value per mint. |
@@ -160,3 +177,4 @@ This public template does not fetch private/protected OpenSea proofs. Paste or i
 - No obfuscated code.
 - No suspicious dependencies.
 - Live broadcast requires explicit `DRY_RUN=false`.
+- Same-nonce gas ladder uses public RPC fanout; private relay path is stubbed until user wires their own relay.
