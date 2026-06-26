@@ -9,6 +9,9 @@ const { buildMintTx, summarizeMintCost } = require("./mint");
 const { broadcastGasLadder } = require("./broadcast");
 const { resolveFeeRecipient } = require("./feeRecipient");
 const { resolveStage } = require("./opensea/stageResolver");
+const { waitForPublicDrop } = require("./monitor/dropMonitor");
+const { ethers: ethersLib } = require("ethers");
+const { SEADROP_ABI } = require("./abi/seadrop");
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -84,6 +87,23 @@ async function run() {
   if (!wallets.length) throw new Error("Missing PRIVATE_KEY in .env");
 
   await waitUntilStart(config.startAt, logger);
+  if (
+    config.waitForOnchainDrop &&
+    config.seadropContract &&
+    config.mintMode === "public"
+  ) {
+    const seaDrop = new ethersLib.Contract(
+      config.seadropContract,
+      SEADROP_ABI,
+      provider,
+    );
+    await waitForPublicDrop(
+      seaDrop,
+      config.nftContract,
+      config.pollIntervalMs,
+      logger,
+    );
+  }
   const feePlan = await buildFeePlan(provider, config);
 
   for (const wallet of wallets) {
