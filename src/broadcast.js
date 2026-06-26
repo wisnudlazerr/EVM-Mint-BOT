@@ -14,34 +14,7 @@ async function sendPublic(wallet, tx, logger) {
   return { response, receipt };
 }
 
-async function sendPrivate(config) {
-  if (!config.privateRelayUrl)
-    throw new Error("PRIVATE_RELAY_URL is required for private broadcast");
-  throw new Error(
-    "Private relay broadcast is intentionally stubbed in this public template",
-  );
-}
-
-async function broadcast(config, wallet, tx, logger) {
-  if (config.broadcastRoute === "private")
-    return sendPrivate(config, wallet, tx, logger);
-  if (config.broadcastRoute === "hybrid") {
-    logger.warn(
-      "hybrid route requested; using public route because private relay is stubbed",
-    );
-  }
-  return sendPublic(wallet, tx, logger);
-}
-
 async function broadcastGasLadder(config, wallet, txs, logger) {
-  if (config.broadcastRoute === "private")
-    return sendPrivate(config, wallet, txs[0], logger);
-  if (config.broadcastRoute === "hybrid") {
-    logger.warn(
-      "hybrid route requested; using public fanout because private relay is stubbed",
-    );
-  }
-
   const nonce = await wallet.getNonce("pending");
   const chain = await wallet.provider.getNetwork();
   const signed = [];
@@ -91,4 +64,4 @@ async function broadcastGasLadder(config, wallet, txs, logger) {
   return { accepted, receipt };
 }
 
-module.exports = { broadcast, broadcastGasLadder, sendPublic, sendPrivate };
+module.exports = { broadcastGasLadder, sendPublic };

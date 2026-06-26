@@ -11,7 +11,6 @@ async function fetchOpenSeaStages(config, logger) {
     "x-app-id": "opensea-web",
     "user-agent": "Mozilla/5.0 hitamlegam-evm-mint-bot",
   };
-  if (config.openSeaApiKey) headers["x-api-key"] = config.openSeaApiKey;
 
   try {
     const response = await fetch("https://gql.opensea.io/graphql", {

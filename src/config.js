@@ -77,8 +77,6 @@ function validateConfig(config) {
     errors.push("MAX_MINT_VALUE_ETH must be a valid non-negative number");
   if (!validIso(config.startAt))
     errors.push("START_AT must be a valid ISO datetime");
-  if (!["public", "private", "hybrid"].includes(config.broadcastRoute))
-    errors.push("BROADCAST_ROUTE must be public, private, or hybrid");
   if (!CHAIN_IDS[config.chainIdentifier])
     errors.push(`Unsupported CHAIN_IDENTIFIER ${config.chainIdentifier}`);
   if (signingRequired && !config.privateKeys.length)
@@ -125,9 +123,6 @@ function loadConfig(argv = process.argv.slice(2)) {
     ),
     minPriorityGwei: numberValue(env.MIN_PRIORITY_GWEI, 2),
     maxPriorityGwei: numberValue(env.MAX_PRIORITY_GWEI, 10),
-    broadcastRoute: String(env.BROADCAST_ROUTE || "public").toLowerCase(),
-    privateRelayUrl: env.PRIVATE_RELAY_URL || "",
-    privateRelayAuthKey: env.PRIVATE_RELAY_AUTH_KEY || "",
     logFile: env.LOG_FILE || "logs/mint-results.jsonl",
   };
 

@@ -54,10 +54,8 @@ function extractErrors(payload) {
 }
 
 async function requestOpenSeaRawTx(config, wallet, logger) {
-  if (!config.openSeaJwt && !config.openSeaApiKey) {
-    logger.warn(
-      "OpenSea raw tx skipped; OPENSEA_JWT or OPENSEA_API_KEY missing",
-    );
+  if (!config.openSeaJwt) {
+    logger.warn("OpenSea raw tx skipped; OPENSEA_JWT missing");
     return { rawTx: null, errors: ["AUTH_MISSING"] };
   }
 
@@ -67,7 +65,6 @@ async function requestOpenSeaRawTx(config, wallet, logger) {
     "x-app-id": "opensea-web",
     "user-agent": "Mozilla/5.0 hitamlegam-evm-mint-bot",
   };
-  if (config.openSeaApiKey) headers["x-api-key"] = config.openSeaApiKey;
   if (config.openSeaJwt) headers.authorization = `Bearer ${config.openSeaJwt}`;
 
   const body = {
