@@ -1,4 +1,4 @@
-const { ethers } = require('ethers');
+const { ethers } = require("ethers");
 
 function deriveWallets(privateKeys, provider) {
   return privateKeys.map((key) => new ethers.Wallet(key, provider));

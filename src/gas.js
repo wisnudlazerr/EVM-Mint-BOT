@@ -1,7 +1,7 @@
-const { ethers } = require('ethers');
+const { ethers } = require("ethers");
 
 function gwei(value) {
-  return ethers.parseUnits(String(value), 'gwei');
+  return ethers.parseUnits(String(value), "gwei");
 }
 
 function clampWei(value, min, max = null) {
@@ -11,7 +11,7 @@ function clampWei(value, min, max = null) {
 }
 
 async function getBaseFee(provider) {
-  const block = await provider.getBlock('pending');
+  const block = await provider.getBlock("pending");
   if (block && block.baseFeePerGas) return block.baseFeePerGas;
   const fee = await provider.getFeeData();
   return fee.lastBaseFeePerGas || fee.gasPrice || gwei(30);
@@ -21,7 +21,9 @@ async function getPriorityFee(provider, config) {
   const min = gwei(config.minPriorityGwei);
   const max = gwei(config.maxPriorityGwei);
   try {
-    const rpcValue = BigInt(await provider.send('eth_maxPriorityFeePerGas', []));
+    const rpcValue = BigInt(
+      await provider.send("eth_maxPriorityFeePerGas", []),
+    );
     return clampWei(rpcValue, min, max);
   } catch {
     const fee = await provider.getFeeData();
@@ -32,7 +34,8 @@ async function getPriorityFee(provider, config) {
 async function buildFeePlan(provider, config) {
   const baseFee = await getBaseFee(provider);
   const maxPriorityFeePerGas = await getPriorityFee(provider, config);
-  let maxFeePerGas = (baseFee * config.baseFeeMultiplier) / 100n + maxPriorityFeePerGas;
+  let maxFeePerGas =
+    (baseFee * config.baseFeeMultiplier) / 100n + maxPriorityFeePerGas;
   if (maxFeePerGas < maxPriorityFeePerGas) maxFeePerGas = maxPriorityFeePerGas;
   return { baseFee, maxFeePerGas, maxPriorityFeePerGas };
 }
