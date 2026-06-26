@@ -5,13 +5,9 @@ const { createLogger } = require("./logger");
 const { connectRpc, contractHasCode } = require("./rpc");
 const { deriveWallets } = require("./wallet");
 const { buildFeePlan, estimateGas } = require("./gas");
-const { buildMintTx, summarizeMintCost } = require("./mint");
+const { summarizeMintCost } = require("./mint");
 const { broadcastGasLadder } = require("./broadcast");
-const { resolveFeeRecipient } = require("./feeRecipient");
 const { resolveStage } = require("./opensea/stageResolver");
-const { waitForPublicDrop } = require("./monitor/dropMonitor");
-const { ethers: ethersLib } = require("ethers");
-const { SEADROP_ABI } = require("./abi/seadrop");
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -80,7 +76,6 @@ async function run() {
   const provider = rpc.provider;
   const wallets = deriveWallets(config.privateKeys, provider);
   await resolveStage(config, logger);
-  const feeRecipient = await resolveFeeRecipient(config, provider, logger);
 
   await preflight(config, provider, wallets, logger);
   if (config.preflightOnly) return;
@@ -107,7 +102,9 @@ async function run() {
   const feePlan = await buildFeePlan(provider, config);
 
   for (const wallet of wallets) {
-    const baseTx = await buildMintTx(config, wallet, logger, feeRecipient);
+    const { fetchOpenSeaTransaction } = require("./opensea");
+    const baseTx = await fetchOpenSeaTransaction(config, wallet, logger);
+    if (!baseTx) throw new Error("OpenSea raw transaction not released; keep OPENSEA_JWT fresh and try again near phase open");
     const gasLimit = await estimateGas(
       provider,
       { from: wallet.address, ...baseTx },

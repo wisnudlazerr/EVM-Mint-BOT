@@ -98,7 +98,7 @@ function validateConfig(config) {
 function loadConfig(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
   const env = loadEnv();
-  const dryRun = args.dryRun || boolValue(env.DRY_RUN, false);
+  const dryRun = args.dryRun || boolValue(env.DRY_RUN, true);
   const preflightOnly = args.preflight || boolValue(env.PREFLIGHT_ONLY, false);
   const chainIdentifier = String(
     env.CHAIN_IDENTIFIER || "ethereum",

@@ -1,8 +1,17 @@
 # EVM Mint BOT
 
-Public-safe geber template for EVM NFT whitelist / FCFS mint flows using a burner wallet.
+OpenSea raw transaction sniper for EVM NFT whitelist / FCFS mints.
 
-This repo is built for whitelist/FCFS timing: preflight checks, dry-run simulation, aggressive fee planning, same-nonce gas ladder broadcast, and explicit live send. It does **not** bypass allowlists, CAPTCHA, signatures, or anti-bot rules.
+This repo is now **raw-only** on purpose: users do not need to understand SeaDrop proof tuples, mint params, ABI routes, or manual allowlist calldata. OpenSea prepares the raw mint transaction; this bot polls for it, then broadcasts with a same-nonce gas ladder.
+
+## What it does
+
+- Polls OpenSea GraphQL for a released raw mint transaction
+- Requires fresh OpenSea JWT from browser session
+- Supports preflight and dry-run before live send
+- Broadcasts with same-nonce gas ladder
+- Masks secrets in logs
+- Keeps `.env`, private keys, JWTs, logs, proofs, and wallet files out of git
 
 ## Security warning
 
@@ -11,13 +20,10 @@ Use a burner wallet only.
 Never commit or share:
 
 - `.env`
-- private keys
+- `PRIVATE_KEY`
+- `OPENSEA_JWT`
 - premium/private RPC URLs
-- wallet lists
-- proofs/signatures
 - mint logs that include sensitive data
-
-The logger masks private keys, auth keys, and tokenized RPC URLs, but you should still treat local logs as sensitive.
 
 ## Install
 
@@ -26,218 +32,159 @@ npm install
 cp .env.example .env
 ```
 
-## Configure `.env`
-
-Required basics:
+## Required `.env`
 
 ```env
-PRIVATE_KEY=0xYOUR_BURNER_PRIVATE_KEY
+PRIVATE_KEY=***
 RPC_URL=https://ethereum-rpc.publicnode.com
 NFT_CONTRACT=0xYourNftContract
 CHAIN_IDENTIFIER=ethereum
 QUANTITY=1
-MINT_PRICE=0
+MINT_MODE=opensea_raw
+OPENSEA_COLLECTION_SLUG=your-collection-slug
+OPENSEA_JWT=eyJ_replace_with_fresh_token
 DRY_RUN=true
 ```
 
-Whitelist / FCFS geber controls:
+`MINT_MODE` is raw-only. Keep it:
 
 ```env
-MINT_MODE=allowlist
-SEADROP_CONTRACT=0xYourSeaDropContract
-START_AT=2026-01-01T00:00:00.000Z
-FIRE_GAS_TIERS=300,220,160,120
-MINT_PARAMS_JSON=["0","1","0","4102444800","0","0","0",false]
-PROOF_JSON=[]
+MINT_MODE=opensea_raw
 ```
 
-Modes:
+## How to get OpenSea JWT
 
-- `opensea_raw` = poll OpenSea GraphQL until raw mint transaction is released, then gas-ladder broadcast
-- `allowlist` = SeaDrop `mintAllowList` with `MINT_PARAMS_JSON` + `PROOF_JSON`
-- `signed` = SeaDrop `mintSigned` with `SALT` + `SIGNATURE`
-- `public` = SeaDrop `mintPublic`
-- `direct` = fallback direct contract call using `MINT_FUNCTION` + `MINT_ARGS_JSON`
+JWT is the browser login token OpenSea uses after your wallet/session is active.
 
-`OPENSEA_SLUG` is currently logged as a placeholder. OpenSea cookie/session proof fetching is intentionally not wired to this public template.
+Do this 5–10 minutes before FCFS / whitelist phase:
+
+1. Open OpenSea collection page in browser
+2. Connect/login wallet that will mint
+3. Press `F12` / open Developer Tools
+4. Open **Network** tab
+5. Filter/search `graphql`
+6. Refresh OpenSea page
+7. Click a `graphql` request
+8. Open **Headers**
+9. Find:
+
+```txt
+Authorization: Bearer eyJ...
+```
+
+10. Copy only token after `Bearer `
+11. Paste into `.env`:
+
+```env
+OPENSEA_JWT=eyJxxxxxxxxxxxxxxxx
+```
+
+JWT expires. Use a fresh one near mint time.
 
 ## Commands
 
-### Syntax check
+### Check syntax
 
 ```bash
 npm run check
 ```
 
-### Preflight
-
-No broadcast. Checks env, RPC, chain id, wallet derivation, balances, and contract code.
-
-```bash
-npm run preflight
-```
-
-### Dry-run
-
-No broadcast. Builds transaction, estimates gas, computes max cost, and checks balance.
-
-```bash
-npm run dry-run
-```
-
-### Live mint
-
-Broadcast only when `DRY_RUN=false` and `PREFLIGHT_ONLY=false`.
-
-```bash
-DRY_RUN=false npm start
-```
-
-## Environment variables
-
-| Variable | Required | Notes |
-| --- | --- | --- |
-| `PRIVATE_KEY` | Live only | Burner wallet private key. Not required for config-only preflight. |
-| `RPC_URL` | Yes | Public or private RPC endpoint. Parser supports `=` inside values. |
-| `NFT_CONTRACT` | Yes | NFT contract address. Must contain code on selected chain. |
-| `SEADROP_CONTRACT` | Optional | SeaDrop contract address for `mintPublic`. |
-| `OPENSEA_SLUG` | Optional | Collection slug placeholder. No cookie/session fetch in public repo. |
-| `MINT_MODE` | Yes | `opensea_raw`, `allowlist`, `signed`, `public`, or `direct`. Default `allowlist`. |
-| `OPENSEA_COLLECTION_SLUG` | Raw mode | OpenSea slug used for stage/raw transaction lookup. |
-| `OPENSEA_JWT` | Raw mode | Fresh OpenSea browser JWT. Never commit it. |
-| `OPENSEA_API_KEY` | Optional | Optional OpenSea API key. Never commit it. |
-| `FIRE_GAS_TIERS` | Yes | Same-nonce gas ladder percentages. Example `700,500,350,250,150`. |
-| `MINT_PARAMS_JSON` | Allowlist/signed | SeaDrop mint params tuple. Keep real values out of git if sensitive. |
-| `PROOF_JSON` | Allowlist | Merkle proof array. Do not commit real proof files. |
-| `SALT` / `SIGNATURE` | Signed | Required for `MINT_MODE=signed`. |
-| `MINT_FUNCTION` / `MINT_ARGS_JSON` | Direct | Fallback for non-SeaDrop contracts. |
-| `CHAIN_IDENTIFIER` | Yes | Example: `ethereum`, `base`, `polygon`, `arbitrum`. |
-| `QUANTITY` | Yes | Positive integer. |
-| `MINT_PRICE` | Yes | ETH value per mint. |
-| `MAX_MINT_VALUE_ETH` | Yes | Safety ceiling used in validation/reporting. |
-| `START_AT` | Optional | ISO datetime. Bot waits until this timestamp before dry-run/live path. |
-| `DRY_RUN` | Yes | Keep `true` until ready to broadcast. |
-| `PREFLIGHT_ONLY` | Optional | Forces preflight-only mode. |
-| `GAS_LIMIT` | Yes | Fallback gas limit if estimation fails. |
-| `BASE_FEE_MULTIPLIER` | Yes | Percent multiplier for base fee. Example `300` = 3x. |
-| `MIN_PRIORITY_GWEI` | Yes | Minimum priority fee. |
-| `MAX_PRIORITY_GWEI` | Yes | Maximum priority fee. |
-| `BROADCAST_ROUTE` | Yes | `public`, `private`, or `hybrid`. Private relay is stubbed by design. |
-| `PRIVATE_RELAY_URL` | Private route | Relay endpoint if you implement private broadcast. |
-| `PRIVATE_RELAY_AUTH_KEY` | Private route | Auth key. Masked in logs. |
-
-## Project structure
-
-```txt
-src/
-  index.js       CLI entrypoint
-  config.js      env parsing and validation
-  env.js         .env parser
-  rpc.js         RPC connection and chain checks
-  wallet.js      burner wallet helpers
-  opensea.js     OpenSea proof placeholder
-  mint.js        tx builder
-  gas.js         fee plan and gas estimate
-  broadcast.js   public/private broadcast routing
-  logger.js      safe console/jsonl logging
-  abi/seadrop.js SeaDrop ABI
-```
-
-## Troubleshooting
-
-### `Missing RPC_URL in .env`
-
-Copy `.env.example` to `.env` and fill `RPC_URL`.
-
-### `Invalid NFT_CONTRACT address`
-
-Use a checksummed or valid hex EVM address. Do not use `0xYourNftContract` in real runs.
-
-### `NFT_CONTRACT has no code on selected chain`
-
-Wrong chain, wrong RPC, or wrong contract address.
-
-### `Insufficient balance`
-
-Burner wallet balance is below mint value plus max gas cost. Top up burner or reduce quantity/gas.
-
-### `mint not started`
-
-Set `START_AT` correctly. The bot waits until `START_AT` before dry-run/live mint path.
-
-### `gas too low`
-
-Increase `GAS_LIMIT`, `BASE_FEE_MULTIPLIER`, or priority fee settings.
-
-### `OpenSea proof unavailable`
-
-This public template does not fetch private/protected OpenSea proofs. Paste or implement proof flow only if you understand target contract ABI and never commit proof files.
-
-
-## Analyzer
-
-Inspect OpenSea stage, on-chain contract code, and fee recipient before running sniper mode:
+### Analyze target
 
 ```bash
 npm run analyze
 ```
 
-Useful env for analyzer/sniper:
+Shows chain, contract code status, OpenSea stage if available, and recommended mode.
 
-```env
-OPENSEA_COLLECTION_SLUG=your-collection-slug
-OPENSEA_POLLS=120
-OPENSEA_POLL_INTERVAL_MS=1000
-WAIT_FOR_ONCHAIN_DROP=false
+### Preflight
+
+```bash
+npm run preflight
 ```
 
-## Gas tier presets
+Checks env, RPC, chain, contract, wallet derivation, and balance. No broadcast.
 
-Default is balanced, not suicidal:
-
-```env
-FIRE_GAS_TIERS=300,220,160,120
-```
-
-For brutal FCFS war, manually raise it:
-
-```env
-FIRE_GAS_TIERS=700,500,350,250,150
-```
-
-Same nonce means only one accepted transaction should be mined, but the highest tier can still make the mined tx expensive on Ethereum mainnet. Use burner wallet and dry-run first.
-
-## OpenSea raw sniper mode
-
-This mode is inspired by OpenSea frontend mint flow. It polls GraphQL for a released transaction, then uses the same nonce gas ladder for broadcast.
-
-```env
-MINT_MODE=opensea_raw
-OPENSEA_COLLECTION_SLUG=your-collection-slug
-OPENSEA_JWT=eyJ...fresh-token
-FIRE_GAS_TIERS=300,220,160,120
-DRY_RUN=true
-```
-
-Run dry first:
+### Dry-run
 
 ```bash
 npm run dry-run
 ```
 
-Live only when ready:
+Polls OpenSea for raw tx, builds cost summary, estimates gas, checks balance. No broadcast.
+
+### Live mint
 
 ```bash
 DRY_RUN=false npm start
 ```
 
+Only use after preflight/dry-run are clean.
+
+## Gas tiers
+
+Default is balanced:
+
+```env
+FIRE_GAS_TIERS=300,220,160,120
+```
+
+For brutal FCFS war, manually raise:
+
+```env
+FIRE_GAS_TIERS=700,500,350,250,150
+```
+
+Same nonce means only one transaction should be mined, but the highest accepted tier can still be expensive on Ethereum mainnet.
+
+## Environment variables
+
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `PRIVATE_KEY` | Live/dry-run | Burner wallet private key |
+| `RPC_URL` | Yes | RPC endpoint |
+| `NFT_CONTRACT` | Yes | NFT contract address |
+| `CHAIN_IDENTIFIER` | Yes | `ethereum`, `base`, `polygon`, etc |
+| `QUANTITY` | Yes | Mint quantity |
+| `MINT_MODE` | Yes | Must be `opensea_raw` |
+| `OPENSEA_COLLECTION_SLUG` | Yes | OpenSea collection slug |
+| `OPENSEA_JWT` | Yes | Fresh OpenSea browser JWT |
+| `OPENSEA_POLLS` | Yes | Poll attempts, default `120` |
+| `OPENSEA_POLL_INTERVAL_MS` | Yes | Poll interval, default `1000` |
+| `FIRE_GAS_TIERS` | Yes | Same-nonce gas ladder percentages |
+| `DRY_RUN` | Yes | Keep `true` until ready |
+
+## Troubleshooting
+
+### `Missing OPENSEA_JWT in .env`
+
+Take fresh JWT from browser Network tab and paste it into `.env`.
+
+### `OpenSea raw transaction not released`
+
+Phase may not be open yet, JWT may be expired, wallet may not be eligible, or OpenSea changed the GraphQL flow.
+
+### `Invalid NFT_CONTRACT address`
+
+Use a valid EVM contract address.
+
+### `NFT_CONTRACT has no code on selected chain`
+
+Wrong chain, wrong RPC, or wrong contract.
+
+### `Insufficient balance`
+
+Top up burner wallet or reduce gas/quantity.
+
+### `gas too expensive`
+
+Lower `FIRE_GAS_TIERS`, `BASE_FEE_MULTIPLIER`, or priority fee values.
+
 ## Safety design
 
-- No hidden transfer logic.
-- No private key upload.
-- No telemetry.
-- No obfuscated code.
-- No suspicious dependencies.
-- Live broadcast requires explicit `DRY_RUN=false`.
-- Same-nonce gas ladder uses public RPC fanout; private relay path is stubbed until user wires their own relay.
-- `npm run analyze` gives a pre-war read on stage, contract code, and fee recipient.
+- No hidden transfer logic
+- No private key upload
+- No telemetry
+- No obfuscated code
+- No suspicious dependencies
+- Live broadcast requires explicit `DRY_RUN=false`
