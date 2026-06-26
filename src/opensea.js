@@ -1,13 +1,8 @@
+const { fetchOpenSeaRawTx } = require("./opensea/proofFetcher");
+
 async function fetchOpenSeaTransaction(config, wallet, logger) {
-  if (!config.openseaSlug) return null;
-  logger.warn(
-    "OpenSea proof fetch is not implemented in this public template",
-    {
-      slug: config.openseaSlug,
-      wallet: wallet.address,
-    },
-  );
-  return null;
+  if (config.mintMode !== "opensea_raw") return null;
+  return fetchOpenSeaRawTx(config, wallet, logger);
 }
 
 module.exports = { fetchOpenSeaTransaction };

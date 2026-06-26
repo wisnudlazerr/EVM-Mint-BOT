@@ -34,7 +34,7 @@ function normalizeMintParams(raw) {
   return params;
 }
 
-function buildSeaDropAllowlistTx(config, wallet) {
+function buildSeaDropAllowlistTx(config, wallet, feeRecipient) {
   if (!config.seadropContract)
     throw new Error("SEADROP_CONTRACT is required for allowlist mode");
   const mintParams = normalizeMintParams(
@@ -46,7 +46,7 @@ function buildSeaDropAllowlistTx(config, wallet) {
     ethers.parseEther(String(config.mintPriceEth)) * BigInt(config.quantity);
   const data = iface.encodeFunctionData("mintAllowList", [
     ethers.getAddress(config.nftContract),
-    config.feeRecipient || ethers.ZeroAddress,
+    feeRecipient,
     wallet.address,
     BigInt(config.quantity),
     mintParams,
@@ -60,7 +60,7 @@ function buildSeaDropAllowlistTx(config, wallet) {
   };
 }
 
-function buildSeaDropSignedTx(config, wallet) {
+function buildSeaDropSignedTx(config, wallet, feeRecipient) {
   if (!config.seadropContract)
     throw new Error("SEADROP_CONTRACT is required for signed mode");
   const mintParams = normalizeMintParams(
@@ -76,7 +76,7 @@ function buildSeaDropSignedTx(config, wallet) {
     ethers.parseEther(String(config.mintPriceEth)) * BigInt(config.quantity);
   const data = iface.encodeFunctionData("mintSigned", [
     ethers.getAddress(config.nftContract),
-    config.feeRecipient || ethers.ZeroAddress,
+    feeRecipient,
     wallet.address,
     BigInt(config.quantity),
     mintParams,
@@ -91,7 +91,7 @@ function buildSeaDropSignedTx(config, wallet) {
   };
 }
 
-function buildSeaDropPublicTx(config, wallet) {
+function buildSeaDropPublicTx(config, wallet, feeRecipient) {
   if (!config.seadropContract)
     throw new Error("SEADROP_CONTRACT is required for public mode");
   const iface = new ethers.Interface(SEADROP_ABI);
@@ -99,7 +99,7 @@ function buildSeaDropPublicTx(config, wallet) {
     ethers.parseEther(String(config.mintPriceEth)) * BigInt(config.quantity);
   const data = iface.encodeFunctionData("mintPublic", [
     ethers.getAddress(config.nftContract),
-    config.feeRecipient || ethers.ZeroAddress,
+    feeRecipient,
     wallet.address,
     BigInt(config.quantity),
   ]);
@@ -135,14 +135,21 @@ function buildDirectMintTx(config) {
   };
 }
 
-async function buildMintTx(config, wallet, logger) {
+async function buildMintTx(
+  config,
+  wallet,
+  logger,
+  feeRecipient = ethers.ZeroAddress,
+) {
   const openseaTx = await fetchOpenSeaTransaction(config, wallet, logger);
   if (openseaTx) return openseaTx;
 
   if (config.mintMode === "allowlist")
-    return buildSeaDropAllowlistTx(config, wallet);
-  if (config.mintMode === "signed") return buildSeaDropSignedTx(config, wallet);
-  if (config.mintMode === "public") return buildSeaDropPublicTx(config, wallet);
+    return buildSeaDropAllowlistTx(config, wallet, feeRecipient);
+  if (config.mintMode === "signed")
+    return buildSeaDropSignedTx(config, wallet, feeRecipient);
+  if (config.mintMode === "public")
+    return buildSeaDropPublicTx(config, wallet, feeRecipient);
   return buildDirectMintTx(config, wallet);
 }
 
