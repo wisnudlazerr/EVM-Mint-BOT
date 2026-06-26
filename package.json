@@ -4,10 +4,13 @@
   "private": false,
   "description": "Clean EVM whitelist/FCFS NFT mint bot template for burner wallets.",
   "type": "commonjs",
-  "main": "whitelist-fcfs-mint-bot.js",
+  "main": "src/index.js",
   "scripts": {
-    "check": "node -c whitelist-fcfs-mint-bot.js",
-    "start": "node whitelist-fcfs-mint-bot.js"
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/config.js && node --check src/env.js && node --check src/rpc.js && node --check src/wallet.js && node --check src/opensea.js && node --check src/mint.js && node --check src/gas.js && node --check src/broadcast.js && node --check src/logger.js",
+    "preflight": "node src/index.js --preflight",
+    "dry-run": "node src/index.js --dry-run",
+    "format": "prettier --write \"src/**/*.js\""
   },
   "dependencies": {
     "dotenv": "^16.4.5",
@@ -21,5 +24,8 @@
     "fcfs",
     "seadrop"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
 }
